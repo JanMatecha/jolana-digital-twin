@@ -18,11 +18,13 @@ def main() -> int:
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 
-    if shutil.which("mmdc"):
-        command = ["mmdc", "-i", str(INPUT), "-o", str(OUTPUT)]
-    elif shutil.which("npx"):
+    mmdc = shutil.which("mmdc") or shutil.which("mmdc.cmd")
+    npx = shutil.which("npx") or shutil.which("npx.cmd")
+    if mmdc:
+        command = [mmdc, "-i", str(INPUT), "-o", str(OUTPUT)]
+    elif npx:
         command = [
-            "npx",
+            npx,
             "-y",
             "@mermaid-js/mermaid-cli",
             "-i",
