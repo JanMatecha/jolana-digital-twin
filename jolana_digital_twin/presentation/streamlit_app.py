@@ -8,7 +8,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
-import streamlit.components.v1 as components
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
 from jolana_digital_twin.libre import summarize
@@ -30,34 +29,6 @@ DEFAULT_DEBUG_DATE = datetime(2026, 6, 22).date()
 TEXT_COLOR = "#111827"
 GRID_COLOR = "#d7dee8"
 AXIS_LINE_COLOR = "#64748b"
-MODEL_WORKFLOW_MERMAID = """
-flowchart LR
-    A["Libre CSV"] --> B["LibreCsvReader"]
-    M["manual meals.csv"] --> C["ManualMealsCsvReader"]
-
-    B --> D["ImportedData"]
-    C --> D
-
-    D --> E["Temporary SQLite"]
-    E --> F["glucose_frame"]
-    E --> G["insulin_frame"]
-    E --> H["meals_frame"]
-
-    F --> P["Python Gaussian response model"]
-    G --> P
-    H --> P
-
-    F --> O["OpenModelica wrapper"]
-    G --> O
-    H --> O
-
-    O --> MO["GaussianResponseGlucose.mo"]
-    MO --> CSV["OpenModelica CSV result"]
-
-    P --> V["Plotly comparison chart"]
-    CSV --> V
-    F --> V
-"""
 
 
 def main() -> None:
@@ -547,25 +518,91 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame, mo
         st.caption(
             "Diagram ukazuje tok dat od Libre CSV pres SQLite, Python model a OpenModelica az do spolecneho Plotly grafu."
         )
-        st.caption("Pokud se diagram nezobrazi, otevri `docs/modelica_visualization.md` v GitHubu.")
-        _show_mermaid_diagram(MODEL_WORKFLOW_MERMAID)
+        st.plotly_chart(_build_model_workflow_figure(), use_container_width=True)
+        st.caption("Mermaid verze diagramu je v `docs/modelica_visualization.md`.")
 
 
-def _show_mermaid_diagram(diagram: str, height: int = 520) -> None:
-    components.html(
-        f"""
-        <div class="mermaid">
-        {diagram}
-        </div>
-        <script type="module">
-          import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-          mermaid.initialize({{ startOnLoad: false, theme: 'default' }});
-          await mermaid.run({{ querySelector: '.mermaid' }});
-        </script>
-        """,
-        height=height,
-        scrolling=True,
+def _build_model_workflow_figure() -> go.Figure:
+    labels = [
+        "Libre CSV",
+        "Manual meals CSV",
+        "LibreCsvReader",
+        "ManualMealsCsvReader",
+        "ImportedData",
+        "Temporary SQLite",
+        "glucose_frame",
+        "insulin_frame",
+        "meals_frame",
+        "Python Gaussian response model",
+        "OpenModelica wrapper",
+        "GaussianResponseGlucose.mo",
+        "OpenModelica CSV result",
+        "Plotly comparison chart",
+    ]
+    index = {label: position for position, label in enumerate(labels)}
+    links = [
+        ("Libre CSV", "LibreCsvReader"),
+        ("Manual meals CSV", "ManualMealsCsvReader"),
+        ("LibreCsvReader", "ImportedData"),
+        ("ManualMealsCsvReader", "ImportedData"),
+        ("ImportedData", "Temporary SQLite"),
+        ("Temporary SQLite", "glucose_frame"),
+        ("Temporary SQLite", "insulin_frame"),
+        ("Temporary SQLite", "meals_frame"),
+        ("glucose_frame", "Python Gaussian response model"),
+        ("insulin_frame", "Python Gaussian response model"),
+        ("meals_frame", "Python Gaussian response model"),
+        ("glucose_frame", "OpenModelica wrapper"),
+        ("insulin_frame", "OpenModelica wrapper"),
+        ("meals_frame", "OpenModelica wrapper"),
+        ("OpenModelica wrapper", "GaussianResponseGlucose.mo"),
+        ("GaussianResponseGlucose.mo", "OpenModelica CSV result"),
+        ("Python Gaussian response model", "Plotly comparison chart"),
+        ("OpenModelica CSV result", "Plotly comparison chart"),
+        ("glucose_frame", "Plotly comparison chart"),
+    ]
+    fig = go.Figure(
+        data=[
+            go.Sankey(
+                arrangement="snap",
+                node={
+                    "label": labels,
+                    "pad": 18,
+                    "thickness": 16,
+                    "line": {"color": AXIS_LINE_COLOR, "width": 0.5},
+                    "color": [
+                        "#60a5fa",
+                        "#f59e0b",
+                        "#93c5fd",
+                        "#fbbf24",
+                        "#a78bfa",
+                        "#94a3b8",
+                        "#22c55e",
+                        "#ef4444",
+                        "#f97316",
+                        "#dc2626",
+                        "#2563eb",
+                        "#7c3aed",
+                        "#38bdf8",
+                        "#111827",
+                    ],
+                },
+                link={
+                    "source": [index[source] for source, _ in links],
+                    "target": [index[target] for _, target in links],
+                    "value": [1] * len(links),
+                    "color": "rgba(100, 116, 139, 0.25)",
+                },
+            )
+        ]
     )
+    fig.update_layout(
+        height=520,
+        margin={"l": 10, "r": 10, "t": 10, "b": 10},
+        paper_bgcolor="white",
+        font={"color": TEXT_COLOR, "size": 12},
+    )
+    return fig
 
 
 def _lower_panel_axis_ranges(meals_frame, insulin_frame) -> tuple[list[float], list[float]]:
