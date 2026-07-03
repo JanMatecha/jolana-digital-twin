@@ -12,7 +12,7 @@ RUN apt-get update \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/openmodelica-keyring.gpg] https://build.openmodelica.org/apt $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
        > /etc/apt/sources.list.d/openmodelica.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends omc \
+    && apt-get install -y --no-install-recommends omc omlibrary \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

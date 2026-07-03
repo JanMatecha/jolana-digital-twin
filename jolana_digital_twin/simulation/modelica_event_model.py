@@ -167,7 +167,8 @@ def _modelica_script(
     peak_times = _modelica_array([event[2] for event in events])
     durations = _modelica_array([event[3] for event in events])
     model_path = str(model_file).replace("\\", "/")
-    return f"""loadFile("{model_path}");
+    return f"""loadModel(Modelica);
+loadFile("{model_path}");
 loadString("model ModelicaGaussianRun
   extends GaussianResponseGlucose(
     initialGlucose = {_modelica_number(initial_glucose)},
