@@ -1,0 +1,14 @@
+services:
+  jolana:
+    container_name: jolana-digital-twin
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    volumes:
+      # Local health data stays outside the image and outside Git.
+      - ./data/raw:/app/data/raw
+      - ./data/processed:/app/data/processed
+      - ./data/manual:/app/data/manual
+      - ./data/db:/app/data/db
+      - ./outputs:/app/outputs
