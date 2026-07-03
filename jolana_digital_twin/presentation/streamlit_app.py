@@ -547,6 +547,7 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame, mo
         st.caption(
             "Diagram ukazuje tok dat od Libre CSV pres SQLite, Python model a OpenModelica az do spolecneho Plotly grafu."
         )
+        st.caption("Pokud se diagram nezobrazi, otevri `docs/modelica_visualization.md` v GitHubu.")
         _show_mermaid_diagram(MODEL_WORKFLOW_MERMAID)
 
 
@@ -558,7 +559,8 @@ def _show_mermaid_diagram(diagram: str, height: int = 520) -> None:
         </div>
         <script type="module">
           import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-          mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
+          mermaid.initialize({{ startOnLoad: false, theme: 'default' }});
+          await mermaid.run({{ querySelector: '.mermaid' }});
         </script>
         """,
         height=height,
