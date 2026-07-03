@@ -1,0 +1,5 @@
+pandas
+matplotlib
+streamlit
+cachetools<6
+plotly

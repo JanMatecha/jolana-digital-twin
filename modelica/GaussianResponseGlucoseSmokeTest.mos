@@ -1,0 +1,18 @@
+cd("../outputs");
+loadFile("../modelica/GaussianResponseGlucose.mo");
+loadString("model GaussianResponseGlucoseSmokeTest
+  extends GaussianResponseGlucose(
+    initialGlucose = 6,
+    nEvents = 2,
+    eventTimes = {0, 3600},
+    eventAmplitudes = {2, -1},
+    peakTimes = {3600, 5400},
+    durations = {10800, 14400});
+end GaussianResponseGlucoseSmokeTest;");
+simulate(
+  GaussianResponseGlucoseSmokeTest,
+  startTime = 0,
+  stopTime = 21600,
+  numberOfIntervals = 72,
+  outputFormat = "csv");
+getErrorString();

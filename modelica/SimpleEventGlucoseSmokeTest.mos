@@ -1,0 +1,16 @@
+cd("../outputs");
+loadFile("../modelica/SimpleEventGlucose.mo");
+loadString("model SimpleEventGlucoseSmokeTest
+  extends SimpleEventGlucose(
+    initialGlucose = 6,
+    nEvents = 2,
+    eventTimes = {900, 1800},
+    eventEffects = {2, -1});
+end SimpleEventGlucoseSmokeTest;");
+simulate(
+  SimpleEventGlucoseSmokeTest,
+  startTime = 0,
+  stopTime = 3600,
+  numberOfIntervals = 4,
+  outputFormat = "csv");
+getErrorString();
