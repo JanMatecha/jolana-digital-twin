@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+import streamlit.components.v1 as components
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
 from jolana_digital_twin.libre import summarize
@@ -29,6 +30,34 @@ DEFAULT_DEBUG_DATE = datetime(2026, 6, 22).date()
 TEXT_COLOR = "#111827"
 GRID_COLOR = "#d7dee8"
 AXIS_LINE_COLOR = "#64748b"
+MODEL_WORKFLOW_MERMAID = """
+flowchart LR
+    A["Libre CSV"] --> B["LibreCsvReader"]
+    M["manual meals.csv"] --> C["ManualMealsCsvReader"]
+
+    B --> D["ImportedData"]
+    C --> D
+
+    D --> E["Temporary SQLite"]
+    E --> F["glucose_frame"]
+    E --> G["insulin_frame"]
+    E --> H["meals_frame"]
+
+    F --> P["Python Gaussian response model"]
+    G --> P
+    H --> P
+
+    F --> O["OpenModelica wrapper"]
+    G --> O
+    H --> O
+
+    O --> MO["GaussianResponseGlucose.mo"]
+    MO --> CSV["OpenModelica CSV result"]
+
+    P --> V["Plotly comparison chart"]
+    CSV --> V
+    F --> V
+"""
 
 
 def main() -> None:
@@ -514,6 +543,27 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame, mo
         margin={"l": 20, "r": 20, "t": 45, "b": 20},
     )
     st.plotly_chart(fig, use_container_width=True)
+    with st.expander("Jak funguje Modelica workflow", expanded=False):
+        st.caption(
+            "Diagram ukazuje tok dat od Libre CSV pres SQLite, Python model a OpenModelica az do spolecneho Plotly grafu."
+        )
+        _show_mermaid_diagram(MODEL_WORKFLOW_MERMAID)
+
+
+def _show_mermaid_diagram(diagram: str, height: int = 520) -> None:
+    components.html(
+        f"""
+        <div class="mermaid">
+        {diagram}
+        </div>
+        <script type="module">
+          import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+          mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
+        </script>
+        """,
+        height=height,
+        scrolling=True,
+    )
 
 
 def _lower_panel_axis_ranges(meals_frame, insulin_frame) -> tuple[list[float], list[float]]:
