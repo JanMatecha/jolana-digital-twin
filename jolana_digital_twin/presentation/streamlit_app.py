@@ -29,6 +29,7 @@ DEFAULT_DEBUG_DATE = datetime(2026, 6, 22).date()
 TEXT_COLOR = "#111827"
 GRID_COLOR = "#d7dee8"
 AXIS_LINE_COLOR = "#64748b"
+MODEL_WORKFLOW_SVG = Path(__file__).with_name("static") / "modelica_workflow.svg"
 
 
 def main() -> None:
@@ -518,8 +519,19 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame, mo
         st.caption(
             "Diagram ukazuje tok dat od Libre CSV pres SQLite, Python model a OpenModelica az do spolecneho Plotly grafu."
         )
-        st.plotly_chart(_build_model_workflow_figure(), use_container_width=True)
-        st.caption("Mermaid verze diagramu je v `docs/modelica_visualization.md`.")
+        mermaid_tab, sankey_tab = st.tabs(["Mermaid diagram", "Sankey diagram"])
+        with mermaid_tab:
+            _show_model_workflow_svg()
+            st.caption("Mermaid zdroj a GitHub verze diagramu jsou v `docs/modelica_visualization.md`.")
+        with sankey_tab:
+            st.plotly_chart(_build_model_workflow_figure(), use_container_width=True)
+
+
+def _show_model_workflow_svg() -> None:
+    if not MODEL_WORKFLOW_SVG.exists():
+        st.info("Workflow SVG chybi. Spust `python tools/render_mermaid.py`.")
+        return
+    st.image(str(MODEL_WORKFLOW_SVG), use_container_width=True)
 
 
 def _build_model_workflow_figure() -> go.Figure:

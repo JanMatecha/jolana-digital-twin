@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="760" viewBox="0 0 1900 760" role="img" aria-labelledby="title desc">
+  <title id="title">Modelica workflow</title>
+  <desc id="desc">Static SVG version of the Mermaid workflow showing Libre CSV and manual meal inputs, readers, ImportedData, SQLite frames, Python and OpenModelica models, and the Plotly comparison chart.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .node { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; }
+      .input { fill: #dbeafe; }
+      .reader { fill: #fef3c7; }
+      .store { fill: #ede9fe; }
+      .frame { fill: #dcfce7; }
+      .model { fill: #fee2e2; }
+      .output { fill: #e0f2fe; }
+      .chart { fill: #111827; stroke: #111827; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 16px; fill: #111827; text-anchor: middle; dominant-baseline: middle; }
+      .chart-label { fill: #ffffff; }
+      .edge { fill: none; stroke: #475569; stroke-width: 1.6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1900" height="760" fill="#ffffff"/>
+
+  <g id="edges">
+    <path class="edge" d="M 180 160 L 250 160"/>
+    <path class="edge" d="M 180 285 L 250 285"/>
+    <path class="edge" d="M 460 160 C 505 160 505 225 550 225"/>
+    <path class="edge" d="M 460 285 C 505 285 505 225 550 225"/>
+    <path class="edge" d="M 730 225 L 800 225"/>
+    <path class="edge" d="M 980 225 C 1025 225 1025 125 1070 125"/>
+    <path class="edge" d="M 980 225 L 1070 225"/>
+    <path class="edge" d="M 980 225 C 1025 225 1025 325 1070 325"/>
+
+    <path class="edge" d="M 1250 125 C 1290 125 1290 425 1330 425"/>
+    <path class="edge" d="M 1250 225 C 1290 225 1290 425 1330 425"/>
+    <path class="edge" d="M 1250 325 C 1290 325 1290 425 1330 425"/>
+
+    <path class="edge" d="M 1250 125 C 1290 125 1290 555 1330 555"/>
+    <path class="edge" d="M 1250 225 C 1290 225 1290 555 1330 555"/>
+    <path class="edge" d="M 1250 325 C 1290 325 1290 555 1330 555"/>
+
+    <path class="edge" d="M 1510 555 L 1580 555"/>
+    <path class="edge" d="M 1670 590 L 1670 610"/>
+    <path class="edge" d="M 1670 680 L 1670 700"/>
+    <path class="edge" d="M 1510 425 C 1580 425 1580 725 1640 725"/>
+    <path class="edge" d="M 1250 125 C 1460 125 1460 725 1640 725"/>
+  </g>
+
+  <g id="nodes">
+    <rect class="node input" x="40" y="125" width="140" height="70" rx="8"/>
+    <text class="label" x="110" y="160">Libre CSV</text>
+
+    <rect class="node input" x="20" y="250" width="160" height="70" rx="8"/>
+    <text class="label" x="100" y="285">manual meals.csv</text>
+
+    <rect class="node reader" x="250" y="125" width="210" height="70" rx="8"/>
+    <text class="label" x="355" y="160">LibreCsvReader</text>
+
+    <rect class="node reader" x="250" y="250" width="210" height="70" rx="8"/>
+    <text class="label" x="355" y="285">ManualMealsCsvReader</text>
+
+    <rect class="node store" x="550" y="190" width="180" height="70" rx="8"/>
+    <text class="label" x="640" y="225">ImportedData</text>
+
+    <rect class="node store" x="800" y="190" width="180" height="70" rx="8"/>
+    <text class="label" x="890" y="225">Temporary SQLite</text>
+
+    <rect class="node frame" x="1070" y="90" width="180" height="70" rx="8"/>
+    <text class="label" x="1160" y="125">glucose_frame</text>
+
+    <rect class="node frame" x="1070" y="190" width="180" height="70" rx="8"/>
+    <text class="label" x="1160" y="225">insulin_frame</text>
+
+    <rect class="node frame" x="1070" y="290" width="180" height="70" rx="8"/>
+    <text class="label" x="1160" y="325">meals_frame</text>
+
+    <rect class="node model" x="1330" y="390" width="180" height="70" rx="8"/>
+    <text class="label" x="1420" y="415">Python Gaussian</text>
+    <text class="label" x="1420" y="440">response model</text>
+
+    <rect class="node model" x="1330" y="520" width="180" height="70" rx="8"/>
+    <text class="label" x="1420" y="555">OpenModelica wrapper</text>
+
+    <rect class="node output" x="1580" y="520" width="180" height="70" rx="8"/>
+    <text class="label" x="1670" y="545">GaussianResponse</text>
+    <text class="label" x="1670" y="570">Glucose.mo</text>
+
+    <rect class="node output" x="1580" y="610" width="180" height="70" rx="8"/>
+    <text class="label" x="1670" y="635">OpenModelica</text>
+    <text class="label" x="1670" y="660">CSV result</text>
+
+    <rect class="node chart" x="1640" y="700" width="220" height="50" rx="8"/>
+    <text class="label chart-label" x="1750" y="725">Plotly comparison chart</text>
+  </g>
+</svg>
