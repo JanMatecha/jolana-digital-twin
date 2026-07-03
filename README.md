@@ -84,6 +84,59 @@ Webove GUI umi:
 - pouzit hover pres oba grafy najednou,
 - ladit parametry odezvoveho modelu v postrannim panelu.
 
+## Spusteni pres Docker na Synology NAS
+
+Na Synology NAS DS918+ s DSM 7.1.1 a Docker balickem lze aplikaci spustit jako
+Streamlit kontejner na portu `8501`.
+
+Naklonovani repozitare:
+
+```sh
+git clone https://github.com/JanMatecha/jolana-digital-twin.git
+cd jolana-digital-twin
+```
+
+Pred prvnim spustenim vytvor lokalni slozky pro data a vystupy. Tyto slozky
+zustavaji mimo Git a mimo Docker image:
+
+```sh
+mkdir -p data/raw data/processed data/manual data/db outputs
+```
+
+Spusteni nebo rebuild kontejneru:
+
+```sh
+docker compose up -d --build
+```
+
+Overeni, ze kontejner bezi:
+
+```sh
+docker ps
+```
+
+Aplikace bude dostupna na:
+
+```text
+http://192.168.1.14:8501
+```
+
+Zobrazeni logu:
+
+```sh
+docker compose logs -f
+```
+
+Vypnuti kontejneru:
+
+```sh
+docker compose down
+```
+
+Persistentni slozky `data/raw`, `data/processed`, `data/manual`, `data/db` a
+`outputs` jsou pripojene do kontejneru pres `docker-compose.yml`. Osobni
+zdravotni data tak zustavaji jen lokalne na NASu a nejsou soucasti Gitu.
+
 ## CLI vystup do PNG
 
 Jednoduchy puvodni CLI vystup do PNG zustava dostupny:
