@@ -5,7 +5,7 @@ loadString("model GaussianResponseGlucoseSmokeTest
     initialGlucose = 6,
     nEvents = 2,
     eventTimes = {0, 3600},
-    eventAmplitudes = {2, -1},
+    eventAreas = {120, -60},
     peakTimes = {3600, 5400},
     durations = {10800, 14400});
 end GaussianResponseGlucoseSmokeTest;");

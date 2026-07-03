@@ -11,7 +11,11 @@ import streamlit as st
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
 from jolana_digital_twin.libre import summarize
-from jolana_digital_twin.simulation import SimulationParameters, build_event_simulation
+from jolana_digital_twin.simulation import (
+    SimulationParameters,
+    build_event_simulation,
+    build_modelica_event_simulation,
+)
 from jolana_digital_twin.storage import SQLiteStore
 
 
@@ -70,8 +74,16 @@ def main() -> None:
         filtered_meals,
         simulation_parameters,
     )
+    modelica_frame, modelica_error = _build_modelica_simulation_frame(
+        filtered_frame,
+        filtered_insulin,
+        filtered_meals,
+        simulation_parameters,
+    )
+    if modelica_error:
+        st.warning(modelica_error)
     _show_summary(summary)
-    _show_timeline_chart(filtered_frame, filtered_insulin, filtered_meals, simulation_frame)
+    _show_timeline_chart(filtered_frame, filtered_insulin, filtered_meals, simulation_frame, modelica_frame)
 
     with st.expander("Nahled dat"):
         st.subheader("Glukoza")
@@ -134,13 +146,13 @@ def _resolve_input(input_mode: str, uploaded_file, selected_local_file: Path | N
 def _show_simulation_parameters() -> SimulationParameters:
     st.sidebar.subheader("Parametry modelu")
     carb_effect = st.sidebar.number_input(
-        "Citlivost na sacharidy - plocha odezvy (mmol/L na 1 g)",
+        "Citlivost na sacharidy - plocha odezvy (mmol/L*h na 1 g)",
         min_value=0.0,
         max_value=0.5,
         value=0.05,
         step=0.01,
         format="%.2f",
-        help="Celkova plocha vzestupu pod odezvovou krivkou po 1 g sacharidu.",
+        help="Celkova plocha vzestupu pod odezvovou krivkou po 1 g sacharidu. Integruje se v hodinach.",
     )
     carb_peak_minutes = st.sidebar.number_input(
         "Sacharidy: cas vrcholu (min)",
@@ -159,13 +171,13 @@ def _show_simulation_parameters() -> SimulationParameters:
         help="Jak dlouho ma vliv sacharidu trvat.",
     )
     insulin_sensitivity = st.sidebar.number_input(
-        "Inzulinova citlivost - plocha odezvy (mmol/L na 1 jednotku)",
+        "Inzulinova citlivost - plocha odezvy (mmol/L*h na 1 jednotku)",
         min_value=0.0,
         max_value=10.0,
         value=1.20,
         step=0.10,
         format="%.2f",
-        help="Celkova plocha poklesu pod odezvovou krivkou po 1 jednotce inzulinu.",
+        help="Celkova plocha poklesu pod odezvovou krivkou po 1 jednotce inzulinu. Integruje se v hodinach.",
     )
     insulin_peak_minutes = st.sidebar.number_input(
         "Inzulin: cas vrcholu (min)",
@@ -210,6 +222,26 @@ def _load_universal_frames(csv_path: Path, include_manual_meals: bool = True):
 
     glucose_frame["glucose_source"] = glucose_frame["source"]
     return glucose_frame, insulin_frame, meals_frame
+
+
+def _build_modelica_simulation_frame(
+    glucose_frame: pd.DataFrame,
+    insulin_frame: pd.DataFrame,
+    meals_frame: pd.DataFrame,
+    simulation_parameters: SimulationParameters,
+) -> tuple[pd.DataFrame, str | None]:
+    try:
+        return (
+            build_modelica_event_simulation(
+                glucose_frame,
+                insulin_frame,
+                meals_frame,
+                simulation_parameters,
+            ),
+            None,
+        )
+    except Exception as exc:
+        return pd.DataFrame(columns=["timestamp", "modelica_glucose_mmol_l"]), f"Modelica simulace se nepodarila: {exc}"
 
 
 def _show_period_controls(frame):
@@ -329,7 +361,7 @@ def _show_summary(summary) -> None:
     cols[5].metric("Obdobi", _format_period(summary.start, summary.end))
 
 
-def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame) -> None:
+def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame, modelica_frame=None) -> None:
     glucose = frame.dropna(subset=["timestamp", "glucose_mmol_l"])
 
     fig = make_subplots(
@@ -359,9 +391,9 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame) ->
                 x=simulation_frame["timestamp"],
                 y=simulation_frame["simulated_glucose_mmol_l"],
                 mode="lines",
-                name="model",
+                name="model Python",
                 line={"color": "#d62728", "width": 1.4},
-                hovertemplate="%{x|%d.%m.%Y %H:%M}<br>model: %{y:.1f} mmol/L<extra></extra>",
+                hovertemplate="%{x|%d.%m.%Y %H:%M}<br>model Python: %{y:.1f} mmol/L<extra></extra>",
             ),
             row=1,
             col=1,
@@ -379,6 +411,20 @@ def _show_timeline_chart(frame, insulin_frame, meals_frame, simulation_frame) ->
                 row=1,
                 col=1,
             )
+
+    if modelica_frame is not None and not modelica_frame.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=modelica_frame["timestamp"],
+                y=modelica_frame["modelica_glucose_mmol_l"],
+                mode="lines",
+                name="model Modelica",
+                line={"color": "#111827", "width": 1.2, "dash": "dash"},
+                hovertemplate="%{x|%d.%m.%Y %H:%M}<br>model Modelica: %{y:.1f} mmol/L<extra></extra>",
+            ),
+            row=1,
+            col=1,
+        )
         if simulation_frame["insulin_effect_mmol_l"].abs().max() > 0:
             fig.add_trace(
                 go.Scatter(

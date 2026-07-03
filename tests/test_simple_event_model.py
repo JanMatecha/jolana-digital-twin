@@ -109,9 +109,10 @@ class SimpleEventModelTest(unittest.TestCase):
         )
 
         simulation = build_event_simulation(glucose_frame, insulin_frame, meals_frame, parameters)
-        sampled_area = simulation["insulin_effect_mmol_l"].sum() * 5.0
+        sampled_area = simulation["insulin_effect_mmol_l"].sum() * 5.0 / 60.0
 
         self.assertAlmostEqual(sampled_area, -3.0, delta=0.05)
+        self.assertLess(simulation["insulin_effect_mmol_l"].min(), -0.5)
 
     def test_carb_sensitivity_controls_area_under_response(self) -> None:
         start = pd.Timestamp("2026-06-22 00:00")
@@ -136,9 +137,10 @@ class SimpleEventModelTest(unittest.TestCase):
         )
 
         simulation = build_event_simulation(glucose_frame, insulin_frame, meals_frame, parameters)
-        sampled_area = simulation["carb_effect_mmol_l"].sum() * 5.0
+        sampled_area = simulation["carb_effect_mmol_l"].sum() * 5.0 / 60.0
 
         self.assertAlmostEqual(sampled_area, 2.0, delta=0.05)
+        self.assertGreater(simulation["carb_effect_mmol_l"].max(), 0.5)
 
 
 if __name__ == "__main__":

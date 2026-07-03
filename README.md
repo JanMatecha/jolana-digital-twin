@@ -10,9 +10,57 @@ Prvni iterace umi:
 - ulozit glukozu, jidlo a inzulin do SQLite,
 - nacist rucne doplnene jidlo z CSV,
 - zobrazit interaktivni webovy graf v prohlizeci,
-- porovnat merenou glukozu s jednoduchym odezvovym modelem.
+- porovnat merenou glukozu s jednoduchym odezvovym modelem,
+- spocitat model glukozy v Pythonu i v Modelice a vizualne porovnat vysledky.
 
-## Instalace
+## Co musi byt nainstalovane v systemu
+
+Zakladni webova aplikace potrebuje:
+
+- Python 3.11 nebo novejsi,
+- `pip` pro instalaci Python balicku,
+- Git pro stazeni projektu a verzovani,
+- moderni webovy prohlizec, napr. Edge, Chrome nebo Firefox.
+
+Pro praci s Modelica modely je navic potreba:
+
+- OpenModelica s dostupnym prikazem `omc` v systemove `PATH`,
+- volitelne OpenModelica MCP server, pokud se modely kontroluji nebo spousti z Codexu.
+
+Webova aplikace umi OpenModelica spustit primo z Pythonu. Pokud `omc` neni v
+`PATH`, pokusi se najit beznou instalaci ve `C:\Program Files\OpenModelica...`.
+Kdyz OpenModelica dostupna neni, web stale zobrazi Python model a ukaze
+varovani, ze Modelica simulace neprobehla.
+
+Na Windows je vhodne overit instalaci prikazy:
+
+```powershell
+python --version
+python -m pip --version
+git --version
+omc --version
+```
+
+Python knihovny pouzite projektem jsou uvedene v `requirements.txt`:
+
+- `pandas` pro nacitani a transformaci tabulek,
+- `matplotlib` pro puvodni CLI vystup do PNG,
+- `streamlit` pro webove GUI,
+- `plotly` pro interaktivni grafy,
+- `cachetools<6` kvuli kompatibilite Streamlitu.
+
+## Instalace Python prostredi
+
+Doporuceny postup je pouzit virtualni prostredi:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Pokud uz je virtualni prostredi aktivni, staci:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -31,6 +79,7 @@ Webove GUI umi:
 - vybrat anonymni ukazkova data, lokalni realny Libre export nebo nahrany CSV soubor,
 - filtrovat obdobi podle dne, hodiny a posuvniku,
 - zobrazit merenou glukozu, modelovanou glukozu a samostatne vlivy sacharidu a inzulinu,
+- zobrazit Python model a Modelica model v jednom grafu pro kontrolu shody,
 - zobrazit jidlo, tuky a inzulin ve spodnim panelu se stejnou casovou osou,
 - pouzit hover pres oba grafy najednou,
 - ladit parametry odezvoveho modelu v postrannim panelu.
@@ -111,14 +160,16 @@ merenou hodnotou ve vybranem obdobi, mezi udalostmi je konstantni, sacharidy ji
 zvysi a inzulin ji snizi.
 
 Hladsi odezvovy model je v `modelica/GaussianResponseGlucose.mo` a jeho
-pythonova verze je v `jolana_digital_twin/simulation/simple_event_model.py`.
-Kazde jidlo a kazda davka inzulinu vytvori Gaussovu odezvu v case. Ve webovem
-GUI je videt celkovy model i samostatny vliv sacharidu a inzulinu.
+referencni pythonova verze je v `jolana_digital_twin/simulation/simple_event_model.py`.
+Spousteni OpenModelica z Pythonu resi
+`jolana_digital_twin/simulation/modelica_event_model.py`. Kazde jidlo a kazda
+davka inzulinu vytvori Gaussovu odezvu v case. Ve webovem GUI je videt Python
+model, Modelica model i samostatny vliv sacharidu a inzulinu.
 
 Ve webovem GUI jsou zatim jednoduche parametry:
 
-- citlivost na sacharidy: celkova plocha vzestupu pod odezvovou krivkou po 1 g sacharidu,
-- inzulinova citlivost: celkova plocha poklesu pod odezvovou krivkou po 1 jednotce inzulinu,
+- citlivost na sacharidy: celkova plocha vzestupu pod odezvovou krivkou po 1 g sacharidu v `mmol/L*h`,
+- inzulinova citlivost: celkova plocha poklesu pod odezvovou krivkou po 1 jednotce inzulinu v `mmol/L*h`,
 - cas vrcholu odezvy sacharidu a inzulinu,
 - delka odezvy sacharidu a inzulinu.
 
@@ -129,6 +180,17 @@ Model je zatim zamerne jednoduchy. Slouzi hlavne k overeni retezce:
 
 ```text
 mereni + jidlo + inzulin -> udalosti -> simulace -> porovnani s merenim
+```
+
+Aktualni webovy workflow:
+
+```text
+Libre CSV + manualni jidlo
+        -> readery
+        -> docasna SQLite
+        -> Python odezvovy model
+        -> Modelica odezvovy model pres OpenModelica
+        -> spolecny Plotly graf
 ```
 
 Osobni zdravotni data zustavaji jen lokalne a jsou ignorovana Gitem:
@@ -150,8 +212,8 @@ python -m jolana_digital_twin.cli data/raw/libre_export.csv --plot outputs/gluco
 
 1. Pridat samostatny rucni CSV vstup pro inzulin tam, kde chybi v exportu senzoru.
 2. Dodelat tuky v manualnim jidelnim CSV a zapojit je do budouciho modelu.
-3. Propojit webove GUI primo s OpenModelica simulaci.
-4. Kalibrovat parametry modelu proti realnym datum ve vybranem obdobi.
-5. Pripravit stabilni ulozeni dat do lokalni SQLite databaze mimo docasne importy.
+3. Kalibrovat parametry modelu proti realnym datum ve vybranem obdobi.
+4. Pripravit stabilni ulozeni dat do lokalni SQLite databaze mimo docasne importy.
+5. Postupne presouvat dalsi fyziologii modelu z Python prototypu do Modelicy.
 
 Tento projekt neni zdravotnicka pomucka a neslouzi k rozhodovani o lecbe.

@@ -78,7 +78,7 @@ def _combined_effect(
     duration_minutes: float,
     normalize_area: bool = False,
 ) -> float:
-    area = _gaussian_response_area(peak_minutes, duration_minutes) if normalize_area else 1.0
+    area = _gaussian_response_area_hours(peak_minutes, duration_minutes) if normalize_area else 1.0
     return sum(
         effect * _gaussian_response(
             elapsed_minutes=(timestamp - event_timestamp).total_seconds() / 60.0,
@@ -97,11 +97,11 @@ def _gaussian_response(elapsed_minutes: float, peak_minutes: float, duration_min
     return math.exp(-0.5 * ((elapsed_minutes - peak_minutes) / sigma) ** 2)
 
 
-def _gaussian_response_area(peak_minutes: float, duration_minutes: float) -> float:
+def _gaussian_response_area_hours(peak_minutes: float, duration_minutes: float) -> float:
     sigma = max(duration_minutes / 6.0, 1.0)
     lower = (0.0 - peak_minutes) / (math.sqrt(2.0) * sigma)
     upper = (duration_minutes - peak_minutes) / (math.sqrt(2.0) * sigma)
-    area = sigma * math.sqrt(math.pi / 2.0) * (math.erf(upper) - math.erf(lower))
+    area = sigma * math.sqrt(math.pi / 2.0) * (math.erf(upper) - math.erf(lower)) / 60.0
     return max(area, 1e-9)
 
 
