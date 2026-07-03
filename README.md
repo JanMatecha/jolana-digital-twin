@@ -89,8 +89,10 @@ Webove GUI umi:
 Na Synology NAS DS918+ s DSM 7.1.1 a Docker balickem lze aplikaci spustit jako
 Streamlit kontejner na portu `8501`.
 
-Docker image instaluje i OpenModelica compiler `omc`, takze Modelica simulace
-muze bezet primo uvnitr kontejneru na NASu.
+Docker image instaluje OpenModelica compiler `omc` i balicek `omlibrary`.
+`omlibrary` poskytuje Modelica Standard Library, kterou `.mos` skript pred
+simulaci nacita pres `loadModel(Modelica);`. Modelica simulace tak muze bezet
+primo uvnitr kontejneru na NASu.
 
 Naklonovani repozitare:
 
@@ -122,6 +124,12 @@ Overeni, ze je v kontejneru dostupne OpenModelica `omc`:
 
 ```sh
 sudo docker exec -it jolana-digital-twin omc --version
+```
+
+Overeni, ze je dostupna Modelica Standard Library:
+
+```sh
+sudo docker exec -it jolana-digital-twin omc --eval='loadModel(Modelica); getErrorString();'
 ```
 
 Aplikace bude dostupna na:
