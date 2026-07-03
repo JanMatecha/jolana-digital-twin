@@ -193,6 +193,9 @@ Libre CSV + manualni jidlo
         -> spolecny Plotly graf
 ```
 
+Detailnejsi Mermaid diagram toku dat a Modelica workflow je v
+`docs/modelica_visualization.md`.
+
 Osobni zdravotni data zustavaji jen lokalne a jsou ignorovana Gitem:
 
 ```text
