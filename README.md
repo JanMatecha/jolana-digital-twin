@@ -162,6 +162,42 @@ Persistentni slozky `data/raw`, `data/processed`, `data/manual`, `data/db` a
 `outputs` jsou pripojene do kontejneru pres `docker-compose.yml`. Osobni
 zdravotni data tak zustavaji jen lokalne na NASu a nejsou soucasti Gitu.
 
+## Automatizovany deployment na Synology NAS
+
+Pro opakovany deployment na NASu je v repozitari skript:
+
+```text
+scripts/deploy-nas.sh
+```
+
+Nejprve mu dej spustitelne opravneni:
+
+```sh
+chmod +x scripts/deploy-nas.sh
+```
+
+Potom ho lze spustit:
+
+```sh
+./scripts/deploy-nas.sh
+```
+
+Pokud se `sudo` zepta na heslo, zadej heslo uctu `deploy`. Heslo se nikam
+neuklada; skript pouze na zacatku vola `sudo -v`, aby se sudo overilo jednou
+pred provedenim deploymentu.
+
+Skript provede `git pull`, `docker-compose down`, rebuild a start aplikace,
+vypise bezici kontejnery a overi OpenModelica prikazy `omc --version` a
+`loadModel(Modelica); getErrorString();`.
+
+Pokud se skript spousti primo na NASu a repozitar je v
+`/volume1/docker/jolana-digital-twin`, lze pouzit:
+
+```sh
+cd /volume1/docker/jolana-digital-twin
+./scripts/deploy-nas.sh
+```
+
 ## CLI vystup do PNG
 
 Jednoduchy puvodni CLI vystup do PNG zustava dostupny:
