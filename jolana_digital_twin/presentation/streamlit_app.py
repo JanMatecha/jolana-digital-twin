@@ -11,6 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
+from jolana_digital_twin.config import ensure_data_directories
 from jolana_digital_twin.libre import summarize
 from jolana_digital_twin.simulation import (
     SimulationParameters,
@@ -61,6 +62,7 @@ flowchart LR
 
 
 def main() -> None:
+    ensure_data_directories()
     st.set_page_config(page_title="Jolana Digital Twin", layout="wide")
     _apply_light_theme()
     st.title("Jolana Digital Twin")

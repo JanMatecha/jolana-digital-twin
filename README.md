@@ -214,6 +214,49 @@ Vystupni obrazek bude ulozen do `outputs/glucose.png`.
 python -m unittest discover
 ```
 
+## Vyvoj na notebooku vs produkce na NASu
+
+Aplikace rozlisuje lokalni vyvoj a produkcni beh pomoci environment promennych:
+
+```text
+JOLANA_ENV
+JOLANA_DATA_DIR
+JOLANA_DB_PATH
+```
+
+Na notebooku je vychozi vyvojove nastaveni:
+
+```text
+JOLANA_ENV=dev
+JOLANA_DATA_DIR=data-dev
+JOLANA_DB_PATH=data-dev/db/jolana-dev.sqlite
+```
+
+Lokalni spusteni ve PowerShellu:
+
+```powershell
+$env:JOLANA_ENV="dev"
+$env:JOLANA_DATA_DIR="data-dev"
+$env:JOLANA_DB_PATH="data-dev/db/jolana-dev.sqlite"
+python -m streamlit run jolana_digital_twin/presentation/streamlit_app.py
+```
+
+Na NASu/Dockeru se pouziva produkcni nastaveni:
+
+```text
+JOLANA_ENV=prod
+JOLANA_DATA_DIR=/app/data
+JOLANA_DB_PATH=/app/data/db/jolana.sqlite
+```
+
+GitHub prenasi pouze kod a anonymizovana ukazkova data, ne produkcni data.
+Produkci databaze na NASu se nikdy nesynchronizuje pres Git. Pred budoucimi
+migracemi produkcni databaze je potreba udelat backup.
+
+`docker-compose.yml` mountuje jednotlive datove slozky explicitne misto celeho
+`./data:/app/data`, aby lokalni persistentni data neprekryla anonymizovana
+ukazkova data v `data/examples/` obsazena v Docker image.
+
 ## Data
 
 Do Gitu patri jen anonymizovana testovaci data:
