@@ -3,6 +3,10 @@ services:
     container_name: jolana-digital-twin
     build: .
     restart: unless-stopped
+    environment:
+      - JOLANA_ENV=prod
+      - JOLANA_DATA_DIR=/app/data
+      - JOLANA_DB_PATH=/app/data/db/jolana.sqlite
     ports:
       - "8501:8501"
     volumes:
@@ -11,4 +15,8 @@ services:
       - ./data/processed:/app/data/processed
       - ./data/manual:/app/data/manual
       - ./data/db:/app/data/db
+      - ./data/attachments:/app/data/attachments
+      - ./data/derived:/app/data/derived
+      - ./data/exports:/app/data/exports
+      - ./data/backups:/app/data/backups
       - ./outputs:/app/outputs
