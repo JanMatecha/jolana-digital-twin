@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 import hashlib
 import sqlite3
 from datetime import datetime
@@ -8,6 +10,9 @@ from pathlib import Path
 import pandas as pd
 
 from jolana_digital_twin.domain import ImportedData
+
+
+SCHEMA_VERSION = 1
 
 
 class SQLiteStore:
@@ -20,6 +25,11 @@ class SQLiteStore:
         with self._connect() as connection:
             connection.executescript(
                 """
+                create table if not exists schema_migrations (
+                    version integer primary key,
+                    applied_at text not null
+                );
+
                 create table if not exists imports (
                     id integer primary key autoincrement,
                     source text not null,
@@ -64,6 +74,29 @@ class SQLiteStore:
                 );
                 """
             )
+            connection.execute(
+                """
+                insert or ignore into schema_migrations (version, applied_at)
+                values (?, ?)
+                """,
+                (SCHEMA_VERSION, datetime.utcnow().isoformat(timespec="seconds")),
+            )
+
+    def applied_schema_versions(self) -> list[int]:
+        self.initialize()
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                select version
+                from schema_migrations
+                order by version
+                """
+            ).fetchall()
+        return [int(row[0]) for row in rows]
+
+    def schema_version(self) -> int:
+        versions = self.applied_schema_versions()
+        return max(versions, default=0)
 
     def save_import(
         self,
@@ -186,8 +219,17 @@ class SQLiteStore:
             frame["timestamp"] = pd.to_datetime(frame["timestamp"])
         return frame
 
-    def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path)
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
+        connection = sqlite3.connect(self.path)
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
 
 def _checksum(path: Path | None) -> str | None:
