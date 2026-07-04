@@ -10,11 +10,8 @@ from plotly.subplots import make_subplots
 import streamlit as st
 import streamlit.components.v1 as components
 
-from jolana_digital_twin.application import (
-    import_libre_csv,
-    import_manual_meals_csv,
-    initialize_configured_database,
-)
+from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
+from jolana_digital_twin.application.database import initialize_configured_database
 from jolana_digital_twin.config import Settings, ensure_data_directories, get_settings
 from jolana_digital_twin.libre import summarize
 from jolana_digital_twin.simulation import (
@@ -96,9 +93,16 @@ def main() -> None:
         st.error(f"Data se nepodarilo nacist: {exc}")
         return
 
-    filtered_frame = _show_period_controls(frame)
-    filtered_insulin = filter_by_period(insulin_frame, _period_start(filtered_frame), _period_end(filtered_frame))
-    filtered_meals = filter_by_period(meals_frame, _period_start(filtered_frame), _period_end(filtered_frame))
+    _, selected_start, selected_end = _show_period_controls(frame)
+    filtered_frame, filtered_insulin, filtered_meals = _filter_timeline_frames(
+        frame,
+        insulin_frame,
+        meals_frame,
+        selected_start,
+        selected_end,
+    )
+    if filtered_frame.empty:
+        st.warning("Ve vybranem obdobi nejsou zadna mereni glukozy. Zkontroluj zacatek a konec zobrazeni.")
     summary = summarize(filtered_frame)
     simulation_frame = build_event_simulation(
         filtered_frame,
@@ -292,11 +296,11 @@ def _build_modelica_simulation_frame(
         return pd.DataFrame(columns=["timestamp", "modelica_glucose_mmol_l"]), f"Modelica simulace se nepodarila: {exc}"
 
 
-def _show_period_controls(frame):
+def _show_period_controls(frame) -> tuple[pd.DataFrame, datetime, datetime]:
     timestamps = frame["timestamp"].dropna()
     if timestamps.empty:
         st.warning("Data neobsahuji platne casove znacky.")
-        return frame
+        return frame, datetime.min, datetime.max
 
     start = timestamps.min().to_pydatetime()
     end = timestamps.max().to_pydatetime()
@@ -305,7 +309,7 @@ def _show_period_controls(frame):
 
     if start == end:
         st.info(f"Data obsahuji jen jeden cas: {start:%d.%m.%Y %H:%M}.")
-        return frame
+        return frame, start, end
 
     default_start_date = start.date()
     default_end_date = end.date()
@@ -351,7 +355,7 @@ def _show_period_controls(frame):
 
     if manual_start >= manual_end:
         st.error("Zacatek obdobi musi byt pred koncem obdobi.")
-        return frame.iloc[0:0].copy()
+        return frame.iloc[0:0].copy(), manual_start, manual_end
 
     selected_start, selected_end = st.slider(
         "Jemne doladeni obdobi",
@@ -363,7 +367,7 @@ def _show_period_controls(frame):
         key=f"period_slider_{manual_start.isoformat()}_{manual_end.isoformat()}",
     )
 
-    return filter_by_period(frame, selected_start, selected_end)
+    return filter_by_period(frame, selected_start, selected_end), selected_start, selected_end
 
 
 def _combine_date_hour(selected_date, hour: int) -> datetime:
@@ -385,18 +389,18 @@ def filter_by_period(frame, start: datetime, end: datetime):
     ].copy()
 
 
-def _period_start(frame) -> datetime:
-    timestamps = frame["timestamp"].dropna()
-    if timestamps.empty:
-        return datetime.min
-    return timestamps.min().to_pydatetime()
-
-
-def _period_end(frame) -> datetime:
-    timestamps = frame["timestamp"].dropna()
-    if timestamps.empty:
-        return datetime.max
-    return timestamps.max().to_pydatetime()
+def _filter_timeline_frames(
+    glucose_frame,
+    insulin_frame,
+    meals_frame,
+    start: datetime,
+    end: datetime,
+):
+    return (
+        filter_by_period(glucose_frame, start, end),
+        filter_by_period(insulin_frame, start, end),
+        filter_by_period(meals_frame, start, end),
+    )
 
 
 def _show_summary(summary) -> None:
