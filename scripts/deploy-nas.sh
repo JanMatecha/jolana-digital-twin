@@ -10,6 +10,7 @@ sudo -v
 cd "$APP_DIR"
 
 git pull
+mkdir -p data/raw data/processed data/manual data/db data/attachments data/derived data/exports data/backups outputs
 
 sudo docker-compose down
 sudo docker-compose up -d --build

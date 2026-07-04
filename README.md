@@ -105,7 +105,7 @@ Pred prvnim spustenim vytvor lokalni slozky pro data a vystupy. Tyto slozky
 zustavaji mimo Git a mimo Docker image:
 
 ```sh
-mkdir -p data/raw data/processed data/manual data/db outputs
+mkdir -p data/raw data/processed data/manual data/db data/attachments data/derived data/exports data/backups outputs
 ```
 
 Spusteni nebo rebuild kontejneru:
@@ -189,6 +189,9 @@ pred provedenim deploymentu.
 Skript provede `git pull`, `docker-compose down`, rebuild a start aplikace,
 vypise bezici kontejnery a overi OpenModelica prikazy `omc --version` a
 `loadModel(Modelica); getErrorString();`.
+Pred rebuildem take vytvori persistentni slozky `data/raw`, `data/processed`,
+`data/manual`, `data/db`, `data/attachments`, `data/derived`, `data/exports`,
+`data/backups` a `outputs`.
 
 Pokud se skript spousti primo na NASu a repozitar je v
 `/volume1/docker/jolana-digital-twin`, lze pouzit:
@@ -241,12 +244,38 @@ $env:JOLANA_DB_PATH="data-dev/db/jolana-dev.sqlite"
 python -m streamlit run jolana_digital_twin/presentation/streamlit_app.py
 ```
 
+Lokalni realna CSV data pro vyvoj patri do:
+
+```text
+data-dev/raw/
+```
+
+Rucni soubor s jidlem pro vyvoj patri do:
+
+```text
+data-dev/manual/meals.csv
+```
+
 Na NASu/Dockeru se pouziva produkcni nastaveni:
 
 ```text
 JOLANA_ENV=prod
 JOLANA_DATA_DIR=/app/data
 JOLANA_DB_PATH=/app/data/db/jolana.sqlite
+```
+
+Na NASu produkcni data patri do:
+
+```text
+/volume1/docker/jolana-digital-twin/data/raw/
+/volume1/docker/jolana-digital-twin/data/manual/meals.csv
+```
+
+Uvnitr Docker kontejneru aplikace vidi stejna produkcni data jako:
+
+```text
+/app/data/raw/
+/app/data/manual/meals.csv
 ```
 
 GitHub prenasi pouze kod a anonymizovana ukazkova data, ne produkcni data.
