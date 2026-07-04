@@ -1,13 +1,19 @@
 from datetime import date, datetime
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 import pandas as pd
 
+from jolana_digital_twin.config import Settings
 from jolana_digital_twin.libre import load_libre_csv
 from jolana_digital_twin.presentation.streamlit_app import (
+    SAMPLE_DATA,
     _combine_date_hour,
+    _local_data_files,
+    _local_data_patterns,
     _lower_panel_axis_ranges,
+    _manual_meals_path,
     _resolve_input,
     filter_by_period,
 )
@@ -54,6 +60,51 @@ class StreamlitAppTest(unittest.TestCase):
         self.assertEqual(insulin_range[0], 0.0)
         self.assertGreater(meal_range[1], 60.5)
         self.assertGreater(insulin_range[1], 4.0)
+
+    def test_sample_data_stays_in_repository_examples(self) -> None:
+        self.assertEqual(SAMPLE_DATA, Path("data/examples/free_style_libre_sample.csv"))
+
+    def test_manual_meals_path_uses_configured_data_dir(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(
+                jolana_env="test",
+                data_dir=Path(temp_dir) / "data",
+                db_path=Path(temp_dir) / "data" / "db" / "test.sqlite",
+            )
+
+            self.assertEqual(_manual_meals_path(settings), settings.data_dir / "manual" / "meals.csv")
+
+    def test_local_data_patterns_use_configured_raw_dir(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(
+                jolana_env="test",
+                data_dir=Path(temp_dir) / "data",
+                db_path=Path(temp_dir) / "data" / "db" / "test.sqlite",
+            )
+
+            patterns = _local_data_patterns(settings)
+
+            self.assertIn((settings.data_dir / "raw", "*.csv"), patterns)
+            self.assertIn((Path("."), "*_glucose_*.csv"), patterns)
+
+    def test_local_data_files_find_csv_in_configured_raw_dir(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            data_dir = Path(temp_dir) / "data"
+            raw_dir = data_dir / "raw"
+            raw_dir.mkdir(parents=True)
+            csv_path = raw_dir / "libre.csv"
+            csv_path.write_text("dummy", encoding="utf-8")
+            (raw_dir / "notes.txt").write_text("not csv", encoding="utf-8")
+            settings = Settings(
+                jolana_env="test",
+                data_dir=data_dir,
+                db_path=data_dir / "db" / "test.sqlite",
+            )
+
+            files = _local_data_files(settings)
+
+            self.assertIn(csv_path, files)
+            self.assertNotIn(raw_dir / "notes.txt", files)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
-from jolana_digital_twin.config import ensure_data_directories
+from jolana_digital_twin.config import Settings, ensure_data_directories, get_settings
 from jolana_digital_twin.libre import summarize
 from jolana_digital_twin.simulation import (
     SimulationParameters,
@@ -22,11 +22,6 @@ from jolana_digital_twin.storage import SQLiteStore
 
 
 SAMPLE_DATA = Path("data/examples/free_style_libre_sample.csv")
-MANUAL_MEALS_DATA = Path("data/manual/meals.csv")
-LOCAL_DATA_PATTERNS = [
-    (Path("data/raw"), "*.csv"),
-    (Path("."), "*_glucose_*.csv"),
-]
 DEFAULT_DEBUG_DATE = datetime(2026, 6, 22).date()
 TEXT_COLOR = "#111827"
 GRID_COLOR = "#d7dee8"
@@ -62,13 +57,14 @@ flowchart LR
 
 
 def main() -> None:
-    ensure_data_directories()
+    settings = get_settings()
+    ensure_data_directories(settings)
     st.set_page_config(page_title="Jolana Digital Twin", layout="wide")
     _apply_light_theme()
     st.title("Jolana Digital Twin")
     st.caption("Prvni webovy nahled dat z FreeStyle Libre.")
 
-    local_files = _local_data_files()
+    local_files = _local_data_files(settings)
     input_options = ["Anonymni ukazkova data", "Nahrat CSV"]
     if local_files:
         input_options.insert(0, "Lokalni realna data")
@@ -90,7 +86,7 @@ def main() -> None:
 
     try:
         csv_path = _resolve_input(input_mode, uploaded_file, selected_local_file)
-        frame, insulin_frame, meals_frame = _load_universal_frames(csv_path)
+        frame, insulin_frame, meals_frame = _load_universal_frames(csv_path, _manual_meals_path(settings))
     except Exception as exc:
         st.error(f"Data se nepodarilo nacist: {exc}")
         return
@@ -149,9 +145,20 @@ def _apply_light_theme() -> None:
     )
 
 
-def _local_data_files() -> list[Path]:
+def _manual_meals_path(settings: Settings) -> Path:
+    return settings.data_dir / "manual" / "meals.csv"
+
+
+def _local_data_patterns(settings: Settings) -> list[tuple[Path, str]]:
+    return [
+        (settings.data_dir / "raw", "*.csv"),
+        (Path("."), "*_glucose_*.csv"),
+    ]
+
+
+def _local_data_files(settings: Settings) -> list[Path]:
     files: list[Path] = []
-    for directory, pattern in LOCAL_DATA_PATTERNS:
+    for directory, pattern in _local_data_patterns(settings):
         files.extend(path for path in directory.glob(pattern) if path.is_file())
     return sorted(set(files), key=lambda path: str(path).lower())
 
@@ -237,13 +244,18 @@ def _show_simulation_parameters() -> SimulationParameters:
     )
 
 
-def _load_universal_frames(csv_path: Path, include_manual_meals: bool = True):
+def _load_universal_frames(
+    csv_path: Path,
+    manual_meals_path: Path | None = None,
+    include_manual_meals: bool = True,
+):
+    manual_meals_path = manual_meals_path or _manual_meals_path(get_settings())
     with NamedTemporaryFile(delete=False, suffix=".sqlite") as temp_file:
         db_path = Path(temp_file.name)
 
     import_libre_csv(csv_path, db_path)
-    if include_manual_meals and MANUAL_MEALS_DATA.exists():
-        import_manual_meals_csv(MANUAL_MEALS_DATA, db_path)
+    if include_manual_meals and manual_meals_path.exists():
+        import_manual_meals_csv(manual_meals_path, db_path)
 
     store = SQLiteStore(db_path)
     glucose_frame = store.glucose_readings_frame()
