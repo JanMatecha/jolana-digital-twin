@@ -250,6 +250,10 @@ Lokalni realna CSV data pro vyvoj patri do:
 data-dev/raw/
 ```
 
+U vybraneho lokalniho CSV aplikace zobrazuje cestu k souboru, zda pochazi z
+`<JOLANA_DATA_DIR>/raw` nebo ze starsiho fallbacku v koreni projektu, jeho
+velikost a cas posledni zmeny.
+
 Rucni soubor s jidlem pro vyvoj patri do:
 
 ```text
@@ -346,6 +350,9 @@ timestamp,carbs_g,fat_g,protein_g,note
 
 Sloupce `fat_g`, `protein_g` a `note` jsou volitelne z pohledu hodnot, ale
 hlavicka souboru ma zustat stejna.
+
+Upload pres volbu `Nahrat CSV` je zatim jen docasny pro aktualni zobrazeni.
+Soubor se automaticky neuklada do `data/raw` ani do persistentni databaze.
 
 ## Importni vrstva
 

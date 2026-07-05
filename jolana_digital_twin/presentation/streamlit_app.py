@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
+from fnmatch import fnmatch
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -88,6 +89,7 @@ def main() -> None:
 
     try:
         csv_path = _resolve_input(input_mode, uploaded_file, selected_local_file)
+        _show_data_source_info(input_mode, csv_path, settings, uploaded_file)
         frame, insulin_frame, meals_frame = _load_universal_frames(csv_path, _manual_meals_path(settings))
     except Exception as exc:
         st.error(f"Data se nepodarilo nacist: {exc}")
@@ -170,6 +172,104 @@ def _local_data_files(settings: Settings) -> list[Path]:
     for directory, pattern in _local_data_patterns(settings):
         files.extend(path for path in directory.glob(pattern) if path.is_file())
     return sorted(set(files), key=lambda path: str(path).lower())
+
+
+def _local_file_origin(path: Path, settings: Settings) -> str:
+    resolved_path = _safe_resolve(path)
+    raw_dir = _safe_resolve(settings.data_dir / "raw")
+    project_root = _safe_resolve(Path("."))
+
+    if _is_relative_to(resolved_path, raw_dir):
+        return "configured_raw"
+
+    if fnmatch(path.name, "*_glucose_*.csv") and resolved_path.parent == project_root:
+        return "legacy_project_root"
+
+    return "unknown"
+
+
+def _file_metadata(path: Path) -> dict[str, str]:
+    try:
+        stat = path.stat()
+    except OSError:
+        return {"exists": "false", "size": "n/a", "modified": "n/a"}
+
+    return {
+        "exists": "true",
+        "size": _format_file_size(stat.st_size),
+        "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+def _format_file_size(size_bytes: int) -> str:
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    if size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+
+def _safe_resolve(path: Path) -> Path:
+    try:
+        return path.resolve(strict=False)
+    except OSError:
+        return path.absolute()
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
+
+
+def _show_data_source_info(input_mode: str, csv_path: Path, settings: Settings, uploaded_file) -> None:
+    if input_mode == "Lokalni realna data":
+        metadata = _file_metadata(csv_path)
+        st.sidebar.info(
+            "\n\n".join(
+                [
+                    "**Aktualni zdroj dat:** Lokalni CSV",
+                    f"**Soubor:** `{csv_path}`",
+                    f"**Umisteni:** {_local_file_origin_label(_local_file_origin(csv_path, settings))}",
+                    f"**Velikost:** {metadata['size']}",
+                    f"**Zmeneno:** {metadata['modified']}",
+                ]
+            )
+        )
+    elif input_mode == "Anonymni ukazkova data":
+        st.sidebar.info(
+            "\n\n".join(
+                [
+                    "**Aktualni zdroj dat:** Anonymni ukazkova data",
+                    f"**Soubor:** `{SAMPLE_DATA}`",
+                    "**Poznamka:** Tato data jsou anonymizovana testovaci data z repozitare.",
+                ]
+            )
+        )
+    elif input_mode == "Nahrat CSV" and uploaded_file is not None:
+        st.sidebar.info(
+            "\n\n".join(
+                [
+                    "**Aktualni zdroj dat:** Nahrany CSV soubor",
+                    f"**Puvodni nazev:** `{uploaded_file.name}`",
+                    (
+                        "**Poznamka:** Soubor je pouzit jen docasne pro aktualni zobrazeni. "
+                        "Zatim se neuklada do data/raw ani do persistentni databaze."
+                    ),
+                ]
+            )
+        )
+
+
+def _local_file_origin_label(origin: str) -> str:
+    labels = {
+        "configured_raw": "<JOLANA_DATA_DIR>/raw",
+        "legacy_project_root": "legacy fallback v koreni projektu",
+        "unknown": "nezname umisteni",
+    }
+    return labels.get(origin, labels["unknown"])
 
 
 def _resolve_input(input_mode: str, uploaded_file, selected_local_file: Path | None) -> Path:
