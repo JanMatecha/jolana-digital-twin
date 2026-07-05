@@ -69,9 +69,9 @@ def main() -> None:
     st.caption("Prvni webovy nahled dat z FreeStyle Libre.")
 
     local_files = _local_data_files(settings)
-    input_options = ["Anonymni ukazkova data", "Nahrat CSV"]
+    input_options = ["Nacist z databaze", "Anonymni ukazkova data", "Nahrat CSV"]
     if local_files:
-        input_options.insert(0, "Lokalni realna data")
+        input_options.insert(1, "Lokalni realna data")
 
     input_mode = st.sidebar.radio("Zdroj dat", input_options)
     selected_local_file = None
@@ -89,12 +89,27 @@ def main() -> None:
     simulation_parameters = _show_simulation_parameters()
 
     try:
-        csv_path = _resolve_input(input_mode, uploaded_file, selected_local_file)
-        _show_data_source_info(input_mode, csv_path, settings, uploaded_file)
-        _show_persistent_import_action(input_mode, csv_path, settings, uploaded_file)
-        frame, insulin_frame, meals_frame = _load_universal_frames(csv_path, _manual_meals_path(settings))
+        if input_mode == "Nacist z databaze":
+            frame, insulin_frame, meals_frame = _load_persistent_database_frames(settings)
+            _show_persistent_database_source_info(settings, frame, insulin_frame, meals_frame)
+        else:
+            csv_path = _resolve_input(input_mode, uploaded_file, selected_local_file)
+            _show_data_source_info(input_mode, csv_path, settings, uploaded_file)
+            _show_persistent_import_action(input_mode, csv_path, settings, uploaded_file)
+            frame, insulin_frame, meals_frame = _load_universal_frames(csv_path, _manual_meals_path(settings))
     except Exception as exc:
         st.error(f"Data se nepodarilo nacist: {exc}")
+        return
+
+    if not _has_glucose_data(frame):
+        if input_mode == "Nacist z databaze":
+            st.warning(
+                "V persistentni databazi zatim nejsou zadna mereni glukozy. "
+                "Nejprve importuj Libre CSV pomoci volby \"Lokalni realna data\" "
+                "nebo \"Nahrat CSV\" a tlacitka \"Importovat tento CSV soubor do databaze\"."
+            )
+        else:
+            st.warning("Nactena data neobsahuji zadna platna mereni glukozy.")
         return
 
     _, selected_start, selected_end = _show_period_controls(frame)
@@ -302,6 +317,27 @@ def _show_persistent_import_action(input_mode: str, csv_path: Path, settings: Se
         )
 
 
+def _show_persistent_database_source_info(
+    settings: Settings,
+    glucose_frame: pd.DataFrame,
+    insulin_frame: pd.DataFrame,
+    meals_frame: pd.DataFrame,
+) -> None:
+    st.sidebar.info(
+        "\n\n".join(
+            [
+                "**Aktualni zdroj dat:** Persistentni SQLite databaze",
+                f"**Databaze:** `{settings.db_path}`",
+                f"**Prostredi:** `{settings.jolana_env}`",
+                f"**Glukoza:** {len(glucose_frame)} zaznamu",
+                f"**Inzulin:** {len(insulin_frame)} zaznamu",
+                f"**Jidlo:** {len(meals_frame)} zaznamu",
+                "**Poznamka:** Data pochazi z importu ulozenych v JOLANA_DB_PATH.",
+            ]
+        )
+    )
+
+
 def _local_file_origin_label(origin: str) -> str:
     labels = {
         "configured_raw": "<JOLANA_DATA_DIR>/raw",
@@ -327,6 +363,22 @@ def _resolve_input(input_mode: str, uploaded_file, selected_local_file: Path | N
         return SAMPLE_DATA
 
     raise ValueError("Nahraj Libre CSV nebo vyber dostupny zdroj dat.")
+
+
+def _load_persistent_database_frames(settings: Settings):
+    store = SQLiteStore(settings.db_path)
+    glucose_frame = store.glucose_readings_frame()
+    insulin_frame = store.insulin_doses_frame()
+    meals_frame = store.meals_frame()
+
+    if "source" in glucose_frame.columns:
+        glucose_frame["glucose_source"] = glucose_frame["source"]
+
+    return glucose_frame, insulin_frame, meals_frame
+
+
+def _has_glucose_data(frame: pd.DataFrame) -> bool:
+    return not frame.empty and "timestamp" in frame.columns and "glucose_mmol_l" in frame.columns
 
 
 def _show_simulation_parameters() -> SimulationParameters:

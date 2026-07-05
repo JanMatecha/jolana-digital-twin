@@ -106,15 +106,18 @@ Hotovo:
 - existuje explicitni persistentni import Libre CSV do JOLANA_DB_PATH
 - raw kopie importovanych Libre CSV se ukladaji do data/raw/libre/
 - importy jsou chranene proti duplicitam pomoci sha256 checksumu
+- v UI existuje volba Nacist z databaze pro zobrazeni dat z persistentni SQLite
 ```
 
 Dulezite omezeni aktualniho stavu:
 
 ```text
 CSV -> temporary SQLite -> dataframe -> graf
+nebo
+persistentni SQLite -> dataframe -> graf
 ```
 
-Aplikace zatim porad nacita Libre CSV pres docasnou SQLite databazi pro aktualni zobrazeni. Persistentni `jolana.sqlite` se uz vytvari a lze do ni explicitne importovat Libre CSV, ale zatim neni hlavnim zdrojem grafu.
+Aplikace stale umi nacitat Libre CSV pres docasnou SQLite databazi pro aktualni zobrazeni. Persistentni `jolana.sqlite` se uz vytvari, lze do ni explicitne importovat Libre CSV a pres volbu `Nacist z databaze` ji lze pouzit jako zdroj grafu.
 
 ## 5. Soucasne zdroje dat v UI
 
@@ -154,6 +157,10 @@ Produkce uvnitr Dockeru:
 ### Nahrat CSV
 
 Upload pres prohlizec je aktualne docasny. Soubor se pouzije jen pro aktualni zobrazeni a automaticky se neuklada do `data/raw` ani do persistentni databaze.
+
+### Nacist z databaze
+
+Volba cte glukozu, inzulin a jidlo z persistentni SQLite databaze podle `JOLANA_DB_PATH`. CSV/temporary workflow zustava dostupne pro nahled konkretniho souboru a pro explicitni import.
 
 ## 6. Cilovy tok dat ze zdroju
 
@@ -382,7 +389,7 @@ Scope:
 - zatim bez deduplikace
 ```
 
-Stav: implementovano jako explicitni import spusteny uzivatelem ve Streamlit sidebaru. Grafy zatim zustavaji na CSV/temporary SQLite workflow.
+Stav: implementovano jako explicitni import spusteny uzivatelem ve Streamlit sidebaru. CSV/temporary SQLite workflow zustava zachovane pro nahled a import.
 
 ### Krok 2: UI volba Nacist z databaze
 
@@ -393,6 +400,8 @@ Nacist z databaze
 ```
 
 Aplikace pak bude umet zobrazovat data z persistentni SQLite, ne jen z aktualniho CSV.
+
+Stav: implementovano. Volba `Nacist z databaze` cte `glucose_readings`, `insulin_doses` a `meals` z persistentni SQLite databaze podle `JOLANA_DB_PATH`.
 
 ### Krok 3: Rucni zadavani jidla a inzulinu
 
@@ -465,10 +474,15 @@ PR #11:
   rozlisuje <JOLANA_DATA_DIR>/raw a legacy fallback
   upload CSV je jasne oznacen jako docasny
 
-Tento PR:
+PR #13:
   pridan explicitni persistentni import Libre CSV
   raw kopie se uklada do data/raw/libre/
   sha256 checksum chrani proti duplicitnimu importu
+
+Tento PR:
+  pridana volba Nacist z databaze
+  grafy mohou cist z persistentni SQLite
+  CSV temporary workflow zustalo zachovane
 ```
 
 ## 12. Kratke shrnuti
@@ -488,12 +502,12 @@ Aktualni stav:
 Persistentni SQLite se uz vytvari.
 Datove slozky jsou oddelene pro dev a prod.
 Aplikace umi explicitne importovat Libre CSV do persistentni DB.
-Graf ale zatim porad zobrazuje CSV pres temporary SQLite.
-Persistentni DB zatim neni hlavni zdroj grafu.
+Aplikace umi zobrazit graf z persistentni DB pres volbu Nacist z databaze.
+CSV temporary workflow porad existuje pro nahled a import.
 ```
 
 Nejblizsi velky krok:
 
 ```text
-UI volba Nacist z databaze a zobrazeni dat z persistentni SQLite.
+Rucni zadavani jidla/inzulinu do SQLite nebo statusy, audit a curated data.
 ```

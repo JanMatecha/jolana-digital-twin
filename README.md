@@ -76,7 +76,7 @@ Aplikace se otevre v prohlizeci na `http://localhost:8501`.
 
 Webove GUI umi:
 
-- vybrat anonymni ukazkova data, lokalni realny Libre export nebo nahrany CSV soubor,
+- vybrat data z persistentni SQLite databaze, anonymni ukazkova data, lokalni realny Libre export nebo nahrany CSV soubor,
 - filtrovat obdobi podle dne, hodiny a posuvniku,
 - zobrazit merenou glukozu, modelovanou glukozu a samostatne vlivy sacharidu a inzulinu,
 - zobrazit Python model a Modelica model v jednom grafu pro kontrolu shody,
@@ -371,7 +371,21 @@ podle `JOLANA_DB_PATH`. Stejny soubor se podle sha256 checksumu neimportuje
 dvakrat.
 
 Grafy zatim porad bezi ze soucasneho CSV/temporary SQLite workflow. Persistentni
-databaze bude zdrojem grafu az po pridani volby `Nacist z databaze`.
+databaze se plni jen po explicitnim kliknuti na importni tlacitko.
+
+### Nacist z databaze
+
+Po importu Libre CSV lze ve Streamlit sidebaru zvolit zdroj dat
+`Nacist z databaze`. Tato volba cte glukozu, inzulin a jidlo z persistentni
+SQLite databaze podle `JOLANA_DB_PATH`.
+
+CSV volby dal slouzi pro docasne zobrazeni konkretniho souboru a pro explicitni
+import do persistentni databaze. Upload se porad neuklada automaticky a
+anonymni ukazkova data se bezne neimportuji.
+
+Persistentni databaze je timto prvnim krokem k tomu, aby SQLite byla hlavni
+pravdou aplikace. CSV/temporary SQLite workflow zustava zachovane pro nahled a
+bezpecny import.
 
 ## Importni vrstva
 
