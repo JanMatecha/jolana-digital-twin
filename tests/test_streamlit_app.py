@@ -10,6 +10,7 @@ from jolana_digital_twin.libre import load_libre_csv
 from jolana_digital_twin.presentation.streamlit_app import (
     SAMPLE_DATA,
     _combine_date_hour,
+    _filter_timeline_frames,
     _local_data_files,
     _local_data_patterns,
     _lower_panel_axis_ranges,
@@ -36,6 +37,38 @@ class StreamlitAppTest(unittest.TestCase):
         self.assertEqual(len(filtered), 11)
         self.assertEqual(timestamps.min().strftime("%Y-%m-%d %H:%M"), "2026-07-01 07:00")
         self.assertEqual(timestamps.max().strftime("%Y-%m-%d %H:%M"), "2026-07-01 09:00")
+
+    def test_timeline_frames_use_same_selected_period(self) -> None:
+        glucose_frame = pd.DataFrame(
+            {
+                "timestamp": [pd.Timestamp("2026-06-22 08:00")],
+                "glucose_mmol_l": [7.0],
+            }
+        )
+        insulin_frame = pd.DataFrame(
+            {
+                "timestamp": [pd.Timestamp("2026-06-22 09:00"), pd.Timestamp("2026-06-22 22:30")],
+                "units": [1.0, 6.0],
+            }
+        )
+        meals_frame = pd.DataFrame(
+            {
+                "timestamp": [pd.Timestamp("2026-06-22 09:30"), pd.Timestamp("2026-06-22 22:48")],
+                "carbs_g": [45.0, 60.5],
+            }
+        )
+
+        filtered_glucose, filtered_insulin, filtered_meals = _filter_timeline_frames(
+            glucose_frame,
+            insulin_frame,
+            meals_frame,
+            datetime(2026, 6, 22, 22, 0),
+            datetime(2026, 6, 22, 23, 0),
+        )
+
+        self.assertTrue(filtered_glucose.empty)
+        self.assertEqual(filtered_insulin["units"].tolist(), [6.0])
+        self.assertEqual(filtered_meals["carbs_g"].tolist(), [60.5])
 
     def test_resolves_selected_local_real_file(self) -> None:
         selected_path = Path("data/raw/libre_export.csv")

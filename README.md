@@ -278,6 +278,25 @@ Uvnitr Docker kontejneru aplikace vidi stejna produkcni data jako:
 /app/data/manual/meals.csv
 ```
 
+Aplikace pri startu vytvori SQLite databazi podle `JOLANA_DB_PATH`, pokud
+jeste neexistuje. Na notebooku je vychozi cesta:
+
+```text
+data-dev/db/jolana-dev.sqlite
+```
+
+Na NASu/Dockeru je cesta uvnitr kontejneru:
+
+```text
+/app/data/db/jolana.sqlite
+```
+
+Fyzicky na NASu je tato databaze v persistentni slozce:
+
+```text
+/volume1/docker/jolana-digital-twin/data/db/jolana.sqlite
+```
+
 GitHub prenasi pouze kod a anonymizovana ukazkova data, ne produkcni data.
 Produkci databaze na NASu se nikdy nesynchronizuje pres Git. Pred budoucimi
 migracemi produkcni databaze je potreba udelat backup.
@@ -303,7 +322,19 @@ python tools/generate_sample_data.py
 Rucne doplnene jidlo se nacita ze souboru:
 
 ```text
-data/manual/meals.csv
+<JOLANA_DATA_DIR>/manual/meals.csv
+```
+
+Ve vyvoji typicky:
+
+```text
+data-dev/manual/meals.csv
+```
+
+Na NASu uvnitr Dockeru:
+
+```text
+/app/data/manual/meals.csv
 ```
 
 Tento soubor je lokalni a je ignorovany Gitem. Format CSV:
