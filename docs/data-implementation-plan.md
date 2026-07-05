@@ -103,6 +103,9 @@ Hotovo:
 - pri startu aplikace se vytvori databaze podle JOLANA_DB_PATH
 - existuje tabulka schema_migrations se schema verzi 1
 - aplikace v UI ukazuje, jaky CSV zdroj je prave nacteny
+- existuje explicitni persistentni import Libre CSV do JOLANA_DB_PATH
+- raw kopie importovanych Libre CSV se ukladaji do data/raw/libre/
+- importy jsou chranene proti duplicitam pomoci sha256 checksumu
 ```
 
 Dulezite omezeni aktualniho stavu:
@@ -111,7 +114,7 @@ Dulezite omezeni aktualniho stavu:
 CSV -> temporary SQLite -> dataframe -> graf
 ```
 
-Aplikace zatim porad nacita Libre CSV pres docasnou SQLite databazi pro aktualni zobrazeni. Persistentni `jolana.sqlite` se uz vytvari, ale zatim neni hlavnim zdrojem grafu a zatim se do ni automaticky neimportuji Libre CSV data.
+Aplikace zatim porad nacita Libre CSV pres docasnou SQLite databazi pro aktualni zobrazeni. Persistentni `jolana.sqlite` se uz vytvari a lze do ni explicitne importovat Libre CSV, ale zatim neni hlavnim zdrojem grafu.
 
 ## 5. Soucasne zdroje dat v UI
 
@@ -379,6 +382,8 @@ Scope:
 - zatim bez deduplikace
 ```
 
+Stav: implementovano jako explicitni import spusteny uzivatelem ve Streamlit sidebaru. Grafy zatim zustavaji na CSV/temporary SQLite workflow.
+
 ### Krok 2: UI volba Nacist z databaze
 
 Po trvalem importu pridat zdroj dat:
@@ -459,6 +464,11 @@ PR #11:
   UI zobrazuje aktualne vybrany zdroj dat
   rozlisuje <JOLANA_DATA_DIR>/raw a legacy fallback
   upload CSV je jasne oznacen jako docasny
+
+Tento PR:
+  pridan explicitni persistentni import Libre CSV
+  raw kopie se uklada do data/raw/libre/
+  sha256 checksum chrani proti duplicitnimu importu
 ```
 
 ## 12. Kratke shrnuti
@@ -477,12 +487,13 @@ Aktualni stav:
 ```text
 Persistentni SQLite se uz vytvari.
 Datove slozky jsou oddelene pro dev a prod.
-Aplikace ale zatim porad zobrazuje CSV pres temporary SQLite.
+Aplikace umi explicitne importovat Libre CSV do persistentni DB.
+Graf ale zatim porad zobrazuje CSV pres temporary SQLite.
 Persistentni DB zatim neni hlavni zdroj grafu.
 ```
 
 Nejblizsi velky krok:
 
 ```text
-Bezpecny trvaly import Libre CSV do data/raw/libre/ a jolana.sqlite.
+UI volba Nacist z databaze a zobrazeni dat z persistentni SQLite.
 ```
