@@ -10,7 +10,10 @@ from jolana_digital_twin.libre import load_libre_csv
 from jolana_digital_twin.presentation.streamlit_app import (
     SAMPLE_DATA,
     _combine_date_hour,
+    _file_metadata,
     _filter_timeline_frames,
+    _format_file_size,
+    _local_file_origin,
     _local_data_files,
     _local_data_patterns,
     _lower_panel_axis_ranges,
@@ -138,6 +141,63 @@ class StreamlitAppTest(unittest.TestCase):
 
             self.assertIn(csv_path, files)
             self.assertNotIn(raw_dir / "notes.txt", files)
+
+    def test_local_file_origin_configured_raw(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            data_dir = Path(temp_dir) / "data"
+            csv_path = data_dir / "raw" / "libre.csv"
+            settings = Settings(
+                jolana_env="test",
+                data_dir=data_dir,
+                db_path=data_dir / "db" / "test.sqlite",
+            )
+
+            self.assertEqual(_local_file_origin(csv_path, settings), "configured_raw")
+
+    def test_local_file_origin_legacy_project_root(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(
+                jolana_env="test",
+                data_dir=Path(temp_dir) / "data",
+                db_path=Path(temp_dir) / "data" / "db" / "test.sqlite",
+            )
+
+            self.assertEqual(_local_file_origin(Path("sample_glucose_export.csv"), settings), "legacy_project_root")
+
+    def test_local_file_origin_unknown(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(
+                jolana_env="test",
+                data_dir=Path(temp_dir) / "data",
+                db_path=Path(temp_dir) / "data" / "db" / "test.sqlite",
+            )
+
+            self.assertEqual(_local_file_origin(Path(temp_dir) / "other.csv", settings), "unknown")
+
+    def test_format_file_size_formats_bytes_kb_and_mb(self) -> None:
+        self.assertEqual(_format_file_size(512), "512 B")
+        self.assertEqual(_format_file_size(1024), "1.0 KB")
+        self.assertEqual(_format_file_size(1536), "1.5 KB")
+        self.assertEqual(_format_file_size(1024 * 1024), "1.0 MB")
+
+    def test_file_metadata_handles_missing_file(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            metadata = _file_metadata(Path(temp_dir) / "missing.csv")
+
+            self.assertEqual(metadata["exists"], "false")
+            self.assertEqual(metadata["size"], "n/a")
+            self.assertEqual(metadata["modified"], "n/a")
+
+    def test_file_metadata_reports_existing_file(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "sample.csv"
+            path.write_text("abcd", encoding="utf-8")
+
+            metadata = _file_metadata(path)
+
+            self.assertEqual(metadata["exists"], "true")
+            self.assertEqual(metadata["size"], "4 B")
+            self.assertNotEqual(metadata["modified"], "n/a")
 
 
 if __name__ == "__main__":
