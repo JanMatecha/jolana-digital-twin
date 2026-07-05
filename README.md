@@ -354,6 +354,25 @@ hlavicka souboru ma zustat stejna.
 Upload pres volbu `Nahrat CSV` je zatim jen docasny pro aktualni zobrazeni.
 Soubor se automaticky neuklada do `data/raw` ani do persistentni databaze.
 
+### Persistentni import Libre CSV
+
+Lokalni nebo nahrany Libre CSV soubor lze ve Streamlit sidebaru explicitne
+importovat do persistentni databaze. Import se spousti jen po kliknuti na
+`Importovat tento CSV soubor do databaze`.
+
+Pri importu se raw kopie CSV ulozi do:
+
+```text
+<JOLANA_DATA_DIR>/raw/libre/
+```
+
+Zaznam importu a prectena glukoza, inzulin a jidlo se ulozi do SQLite databaze
+podle `JOLANA_DB_PATH`. Stejny soubor se podle sha256 checksumu neimportuje
+dvakrat.
+
+Grafy zatim porad bezi ze soucasneho CSV/temporary SQLite workflow. Persistentni
+databaze bude zdrojem grafu az po pridani volby `Nacist z databaze`.
+
 ## Importni vrstva
 
 Vstupni data se maji nejdriv prevest do univerzalniho domenoveho formatu a az

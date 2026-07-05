@@ -98,6 +98,24 @@ class SQLiteStore:
         versions = self.applied_schema_versions()
         return max(versions, default=0)
 
+    def import_id_for_checksum(self, source: str, checksum: str) -> int | None:
+        self.initialize()
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                select id
+                from imports
+                where source = ? and checksum = ?
+                order by id
+                limit 1
+                """,
+                (source, checksum),
+            ).fetchone()
+        return int(row[0]) if row else None
+
+    def has_import_checksum(self, source: str, checksum: str) -> bool:
+        return self.import_id_for_checksum(source, checksum) is not None
+
     def save_import(
         self,
         imported_data: ImportedData,

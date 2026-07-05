@@ -13,6 +13,7 @@ import streamlit.components.v1 as components
 
 from jolana_digital_twin.application import import_libre_csv, import_manual_meals_csv
 from jolana_digital_twin.application.database import initialize_configured_database
+from jolana_digital_twin.application.persistent_import import import_libre_csv_to_configured_database
 from jolana_digital_twin.config import Settings, ensure_data_directories, get_settings
 from jolana_digital_twin.libre import summarize
 from jolana_digital_twin.simulation import (
@@ -90,6 +91,7 @@ def main() -> None:
     try:
         csv_path = _resolve_input(input_mode, uploaded_file, selected_local_file)
         _show_data_source_info(input_mode, csv_path, settings, uploaded_file)
+        _show_persistent_import_action(input_mode, csv_path, settings, uploaded_file)
         frame, insulin_frame, meals_frame = _load_universal_frames(csv_path, _manual_meals_path(settings))
     except Exception as exc:
         st.error(f"Data se nepodarilo nacist: {exc}")
@@ -260,6 +262,43 @@ def _show_data_source_info(input_mode: str, csv_path: Path, settings: Settings, 
                     ),
                 ]
             )
+        )
+
+
+def _show_persistent_import_action(input_mode: str, csv_path: Path, settings: Settings, uploaded_file) -> None:
+    if input_mode == "Anonymni ukazkova data":
+        st.sidebar.caption("Anonymni ukazkova data se bezne neimportuji do persistentni databaze.")
+        return
+
+    if input_mode == "Nahrat CSV" and uploaded_file is None:
+        return
+
+    if input_mode not in ("Lokalni realna data", "Nahrat CSV"):
+        return
+
+    st.sidebar.subheader("Persistentni import")
+    if st.sidebar.button("Importovat tento CSV soubor do databaze"):
+        try:
+            result = import_libre_csv_to_configured_database(
+                csv_path,
+                settings=settings,
+                original_file_name=uploaded_file.name if uploaded_file is not None else None,
+            )
+        except Exception as exc:
+            st.sidebar.error(f"Import se nepodaril: {exc}")
+            return
+
+        if result.status == "duplicate":
+            st.sidebar.warning("Tento CSV soubor uz byl importovan. Data nebyla vlozena podruhe.")
+            st.sidebar.caption(f"Import ID: {result.import_id}, checksum: {result.checksum[:12]}")
+            return
+
+        st.sidebar.success("CSV soubor byl importovan do persistentni databaze.")
+        st.sidebar.caption(f"Import ID: {result.import_id}")
+        st.sidebar.caption(f"Checksum: {result.checksum[:12]}")
+        st.sidebar.caption(f"Raw kopie: {result.raw_path}")
+        st.sidebar.caption(
+            f"Ulozeno: glukoza {result.glucose_readings}, inzulin {result.insulin_doses}, jidlo {result.meals}"
         )
 
 
